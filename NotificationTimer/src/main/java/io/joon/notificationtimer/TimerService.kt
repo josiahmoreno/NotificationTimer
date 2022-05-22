@@ -1,8 +1,13 @@
 package io.joon.notificationtimer
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
+import android.media.AudioManager
+import android.media.ToneGenerator
 import android.os.*
+import java.time.Duration
+
 
 enum class TimerState { STOPPED, PAUSED, RUNNING, TERMINATED }
 
@@ -27,7 +32,11 @@ class TimerService: Service() {
                 "PLAY" -> {
                     playTimer(
                         intent.getLongExtra("setTime", 0L),
-                        intent.getBooleanExtra("forReplay", false))
+                        intent.getBooleanExtra("forReplay", false),
+                        intent.getBooleanExtra("vibrationEnabled", false),
+                        intent.getLongExtra("vibrationDuration", 1000L),
+                        intent.getBooleanExtra("beepEnabled", false),
+                        intent.getIntExtra("beepDuration", 2000))
                 }
                 "PAUSE" -> pauseTimer()
                 "STOP" -> stopTimer()
@@ -48,7 +57,7 @@ class TimerService: Service() {
         stopSelf()
     }
 
-    private fun playTimer(setTime: Long, isReplay: Boolean) {
+    private fun playTimer(setTime: Long, isReplay: Boolean, vibrationEnabled: Boolean, vibrationDuration: Long, beepEnabled: Boolean, beepDuration: Int) {
 
         if (!isReplay) {
             this.setTime = setTime
@@ -65,6 +74,21 @@ class TimerService: Service() {
                 val secondsStr = secondsInMinuteUntilFinished.toString()
                 val showTime = "$minutesUntilFinished : ${if (secondsStr.length == 2) secondsStr else "0$secondsStr"}"
                 NotificationTimer.updateStopState(this@TimerService, showTime, true)
+                //vibration
+                if(vibrationEnabled){
+                    val v = getSystemService(VIBRATOR_SERVICE) as Vibrator
+                    // Vibrate for 500 milliseconds
+                    // Vibrate for 500 milliseconds
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        v.vibrate(VibrationEffect.createOneShot(vibrationDuration, VibrationEffect.DEFAULT_AMPLITUDE))
+                    } else {
+                        //deprecated in API 26
+                        v.vibrate(vibrationDuration)
+                    }
+                }
+                if(beepEnabled)
+                beep(beepDuration)
+
             }
 
             override fun onTick(millisUntilFinished: Long) {
@@ -76,6 +100,18 @@ class TimerService: Service() {
 
         state = TimerState.RUNNING
     }
+
+
+    fun beep(duration: Int)
+    {
+        val toneG = ToneGenerator(AudioManager.STREAM_ALARM, 100)
+        toneG.startTone(ToneGenerator.TONE_DTMF_S, duration)
+        val handler = Handler(Looper.getMainLooper())
+        handler.postDelayed({
+            toneG.release()
+        }, (duration + 50).toLong())
+    }
+
 
     private fun pauseTimer() {
         if (::timer.isInitialized) {

@@ -38,6 +38,11 @@ object NotificationTimer: Timer {
     private var stopBtnIcon: Int? = null
     private var finishListener: onFinishListener? = null
     private var tickListener: onTickListener? = null
+    private var beepEnabled : Boolean = false
+    private var beepDuration: Long = -1
+    private var vibrationEnabled : Boolean = false
+    private var vibrationDuration: Long = -1
+
 
     private lateinit var channelId: String
     private lateinit var notificationManager: NotificationManagerCompat
@@ -53,6 +58,10 @@ object NotificationTimer: Timer {
             action = "PLAY"
             putExtra("setTime", timeMillis)
             putExtra("forReplay", TimerService.state == TimerState.PAUSED)
+            putExtra("vibrationEnabled", vibrationEnabled)
+            putExtra("vibrationDuration", vibrationDuration)
+            putExtra("beepEnabled", beepEnabled)
+            putExtra("beepDuration", beepDuration)
         }
         ContextCompat.startForegroundService(context, playIntent)
     }
@@ -243,6 +252,25 @@ object NotificationTimer: Timer {
 
         fun setOnTickListener(listener: onTickListener): Builder {
             tickListener = listener
+            return this
+        }
+
+        fun vibration(enabled: Boolean): Builder {
+            vibrationEnabled = enabled
+            return this
+        }
+        fun vibrationDuration(duration: Long): Builder {
+            vibrationDuration = duration
+            return this
+        }
+
+        fun beep(enabled: Boolean): Builder {
+            beepEnabled = enabled
+            return this
+        }
+
+        fun beepDuration(duration: Long): Builder {
+            beepDuration = duration
             return this
         }
 
